@@ -59,7 +59,7 @@ class _HomeState extends State<Home> {
   void logout() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
   }
 
@@ -180,7 +180,7 @@ class _HomeState extends State<Home> {
                         return dateA.compareTo(dateB);
                       });
                       return ListView.builder(
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         itemCount: snapshot.data!.length,
                         itemBuilder: (context, index) {
                           final varTodo = snapshot.data![index];
