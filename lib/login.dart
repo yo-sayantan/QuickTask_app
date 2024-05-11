@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_parse/main.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
+import 'creds.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  const keyApplicationId = 'HvM6f60EFmoQO7YjUI8BObe8ZCSpeEf9dOcuFjmZ';
-  const keyClientKey = 'OVzjdVTd1DmS7NUXaraR67qgHqxqgr7FYxs67OHG';
-  const keyParseServerUrl = 'https://parseapi.back4app.com';
 
   await Parse().initialize(keyApplicationId, keyParseServerUrl,
       clientKey: keyClientKey, debug: true);
@@ -16,9 +14,9 @@ void main() async {
   runApp(MaterialApp(
     home: const LoginPage(),
     theme: ThemeData(
-      primaryColor: Colors.indigo, // Updated primary color
-      hintColor: Colors.deepOrange, // Updated accent color
-      scaffoldBackgroundColor: Colors.grey[200], // Updated scaffold background color
+      primaryColor: Colors.indigo,
+      hintColor: Colors.deepOrange,
+      scaffoldBackgroundColor: Colors.grey[200],
       // hintColor: Colors.teal,
       fontFamily: 'Montserrat',
     ),
@@ -41,15 +39,12 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Listen for changes in text fields
     _emailController.addListener(_checkLoginEnable);
     _passwordController.addListener(_checkLoginEnable);
   }
 
-  // Method to check if login button should be enabled
   void _checkLoginEnable() {
     setState(() {
-      // Enable login if both email and password fields are not empty
       _isLoginEnabled =
           _emailController.text.trim().isNotEmpty &&
               _passwordController.text.isNotEmpty;
@@ -69,10 +64,9 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     if (response.success) {
-      // Redirect to the main.dart page upon successful login
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => Home()), // Assume MyApp is the main.dart page
+        MaterialPageRoute(builder: (context) => const Home()),
       );
     } else {
       showDialog(
@@ -106,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
-              'QuickTask Pro', // Center the title
+              'QuickTask Pro',
               style: TextStyle(
                 fontSize: 35.0,
                 fontWeight: FontWeight.bold,
@@ -152,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                       _isLoading
                           ? const CircularProgressIndicator()
                           : ElevatedButton(
-                        onPressed: _isLoginEnabled // Disable login button if login is not enabled
+                        onPressed: _isLoginEnabled
                             ? () {
                           _loginUser(
                             _emailController.text.trim(),
