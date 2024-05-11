@@ -12,12 +12,13 @@ void main() async {
   await Parse().initialize(keyApplicationId, keyParseServerUrl,
       clientKey: keyClientKey, debug: true);
 
+  final currentUser = await ParseUser.currentUser();
   runApp(MaterialApp(
-    home: const LoginPage(),
+    home: currentUser == null ? const LoginPage() : const LoginPage(),
     theme: ThemeData(
-      primaryColor: Colors.indigo, // Updated primary color
-      hintColor: Colors.deepOrange, // Updated accent color
-      scaffoldBackgroundColor: Colors.grey[200], // Updated scaffold background color
+      primaryColor: Colors.indigo,
+      hintColor: Colors.deepOrange,
+      scaffoldBackgroundColor: Colors.grey[200],
       // hintColor: Colors.teal,
       fontFamily: 'Montserrat',
     ),
@@ -42,15 +43,13 @@ class _HomeState extends State<Home> {
       ));
       return;
     }
-    // Show date picker
     final selectedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
-    if (selectedDate == null) return; // User canceled date selection
-    // Save todo with target date
+    if (selectedDate == null) return;
     await saveTodo(todoController.text, selectedDate);
     setState(() {
       todoController.clear();
@@ -58,7 +57,6 @@ class _HomeState extends State<Home> {
   }
 
   void logout() {
-    // Redirect to the login page upon logout
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
@@ -75,9 +73,10 @@ class _HomeState extends State<Home> {
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: Colors.white,
+            // align: left,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
         backgroundColor: Colors.blueAccent,
         actions: <Widget>[
           TextButton(
@@ -85,9 +84,9 @@ class _HomeState extends State<Home> {
             child: const Text(
               'Logout',
               style: TextStyle(
-                color: Colors.white, // Change the text color
-                fontSize: 16, // Change the font size
-                fontWeight: FontWeight.bold, // Apply bold font weight
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -96,7 +95,7 @@ class _HomeState extends State<Home> {
       body: Column(
         children: <Widget>[
           Container(
-            color: Colors.white.withOpacity(0.8), // Set the color and opacity
+            color: Colors.white.withOpacity(0.8),
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Row(
@@ -136,7 +135,6 @@ class _HomeState extends State<Home> {
             ),
           ),
           Expanded(
-
             child: FutureBuilder<List<ParseObject>>(
               future: getTodo(),
               builder: (context, snapshot) {
@@ -157,6 +155,30 @@ class _HomeState extends State<Home> {
                         child: Text("No Data..."),
                       );
                     } else {
+                      // Sort the list based on targetDate and completion status
+                      snapshot.data!.sort((a, b) {
+                        final DateTime? dateA = a.get<DateTime>('targetDate');
+                        final DateTime? dateB = b.get<DateTime>('targetDate');
+                        final bool doneA = a.get<bool>('done') ?? false;
+                        final bool doneB = b.get<bool>('done') ?? false;
+
+                        // Incomplete tasks should come before completed tasks
+                        if (!doneA && doneB) {
+                          return -1;
+                        } else if (doneA && !doneB) {
+                          return 1;
+                        }
+
+                        // Sort by targetDate if both tasks have the same completion status
+                        if (dateA == null && dateB == null) {
+                          return 0;
+                        } else if (dateA == null) {
+                          return 1;
+                        } else if (dateB == null) {
+                          return -1;
+                        }
+                        return dateA.compareTo(dateB);
+                      });
                       return ListView.builder(
                         padding: EdgeInsets.all(16),
                         itemCount: snapshot.data!.length,
@@ -168,7 +190,7 @@ class _HomeState extends State<Home> {
                           return ListTile(
                             title: Text(varTitle),
                             subtitle: varTargetDate != null
-                                ? Text('Due: ${DateFormat('dd-MMM-yyyy').format(varTargetDate)}') // Format date as MM/dd/yyyy
+                                ? Text('Due: ${DateFormat('dd-MMM-yyyy').format(varTargetDate)}')
                                 : null,
                             leading: CircleAvatar(
                               backgroundColor:
@@ -215,25 +237,33 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> saveTodo(String title, DateTime targetDate) async {
-    // Extract date part from the DateTime object
     final todoDate = DateTime(targetDate.year, targetDate.month, targetDate.day);
-    final todo = ParseObject('Todo')
-      ..set('title', title)
-      ..set('done', false)
-      ..set('targetDate', todoDate); // Save only the date part
-    await todo.save();
+    final currentUser = await ParseUser.currentUser();
+    final userId = currentUser?.objectId;
+    if (userId != null) {
+      final todo = ParseObject('Todo')
+        ..set('title', title)
+        ..set('done', false)
+        ..set('targetDate', todoDate)
+        ..set('userId', userId);
+      await todo.save();
+    }
   }
 
   Future<List<ParseObject>> getTodo() async {
-    QueryBuilder<ParseObject> queryTodo =
-    QueryBuilder<ParseObject>(ParseObject('Todo'));
-    final ParseResponse apiResponse = await queryTodo.query();
+    final currentUser = await ParseUser.currentUser();
+    final userId = currentUser?.objectId;
+    if (userId != null) {
+      QueryBuilder<ParseObject> queryTodo =
+      QueryBuilder<ParseObject>(ParseObject('Todo'))
+        ..whereEqualTo('userId', userId);
+      final ParseResponse apiResponse = await queryTodo.query();
 
-    if (apiResponse.success && apiResponse.results != null) {
-      return apiResponse.results as List<ParseObject>;
-    } else {
-      return [];
+      if (apiResponse.success && apiResponse.results != null) {
+        return apiResponse.results as List<ParseObject>;
+      }
     }
+    return [];
   }
 
   Future<void> updateTodo(String id, bool done) async {

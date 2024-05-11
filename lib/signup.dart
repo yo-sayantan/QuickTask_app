@@ -1,65 +1,49 @@
-// login.dart
+// signup.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_parse/signup.dart'; // Import the SignUpPage file
-import 'package:flutter_parse/main.dart';
+import 'package:flutter_parse/login.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
-import 'creds.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await Parse().initialize(keyApplicationId, keyParseServerUrl,
-      clientKey: keyClientKey, debug: true);
-
-  runApp(MaterialApp(
-    home: const LoginPage(),
-    theme: ThemeData(
-      primaryColor: Colors.indigo,
-      hintColor: Colors.deepOrange,
-      scaffoldBackgroundColor: Colors.grey[200],
-      // hintColor: Colors.teal,
-      fontFamily: 'Montserrat',
-    ),
-  ));
-}
-
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _SignUpPageState createState() => _SignUpPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _SignUpPageState extends State<SignUpPage> {
+  final TextEditingController _userIdController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isLoginEnabled = false;
+  bool _isSignUpEnabled = false;
 
   @override
   void initState() {
     super.initState();
-    _emailController.addListener(_checkLoginEnable);
-    _passwordController.addListener(_checkLoginEnable);
+    _userIdController.addListener(_checkSignUpEnable);
+    _emailController.addListener(_checkSignUpEnable);
+    _passwordController.addListener(_checkSignUpEnable);
   }
 
-  void _checkLoginEnable() {
+  void _checkSignUpEnable() {
     setState(() {
-      _isLoginEnabled =
-          _emailController.text.trim().isNotEmpty &&
+      _isSignUpEnabled =
+          _userIdController.text.trim().isNotEmpty &&
+              _emailController.text.trim().isNotEmpty &&
               _passwordController.text.isNotEmpty;
     });
   }
 
-  Future<void> _loginUser(String email, String password) async {
+  Future<void> _signUpUser(
+      String userId, String email, String password) async {
     setState(() {
       _isLoading = true;
     });
 
-    final user = ParseUser(email, password, email);
-    final response = await user.login();
+    final user = ParseUser(userId, password, email)
+      ..set('userId', userId);
+    final response = await user.signUp();
 
     setState(() {
       _isLoading = false;
@@ -68,13 +52,13 @@ class _LoginPageState extends State<LoginPage> {
     if (response.success) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const Home()),
+        MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     } else {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Login Failed'),
+          title: const Text('Sign Up Failed'),
           content: Text(response.error!.message),
           actions: <Widget>[
             TextButton(
@@ -102,7 +86,7 @@ class _LoginPageState extends State<LoginPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
-              'QuickTask Pro',
+              'Sign Up',
               style: TextStyle(
                 fontSize: 35.0,
                 fontWeight: FontWeight.bold,
@@ -123,9 +107,20 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       TextField(
+                        controller: _userIdController,
+                        decoration: InputDecoration(
+                          labelText: 'Username *',
+                          prefixIcon: const Icon(Icons.person),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20.0),
+                      TextField(
                         controller: _emailController,
                         decoration: InputDecoration(
-                          labelText: 'Username',
+                          labelText: 'Email*',
                           prefixIcon: const Icon(Icons.email),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -137,7 +132,7 @@ class _LoginPageState extends State<LoginPage> {
                         controller: _passwordController,
                         obscureText: true,
                         decoration: InputDecoration(
-                          labelText: 'Password',
+                          labelText: 'Password*',
                           prefixIcon: const Icon(Icons.lock),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10.0),
@@ -148,9 +143,10 @@ class _LoginPageState extends State<LoginPage> {
                       _isLoading
                           ? const CircularProgressIndicator()
                           : ElevatedButton(
-                        onPressed: _isLoginEnabled
+                        onPressed: _isSignUpEnabled
                             ? () {
-                          _loginUser(
+                          _signUpUser(
+                            _userIdController.text.trim(),
                             _emailController.text.trim(),
                             _passwordController.text,
                           );
@@ -162,29 +158,30 @@ class _LoginPageState extends State<LoginPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 15, horizontal: 30),
                         ),
                         child: const Text(
-                          'Login',
+                          'Sign Up',
                           style: TextStyle(
                             fontSize: 20,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20.0),
-                      const Text('Do not have an account ?   '),
+                      const SizedBox(height: 10.0),
                       TextButton(
                         onPressed: () {
-                          Navigator.push(
+                          Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (context) => SignUpPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
+                            ),
                           );
                         },
                         child: const Text(
-                          'Sign Up',
+                          'Already have an account? Login',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
                           ),
                         ),
                       ),
